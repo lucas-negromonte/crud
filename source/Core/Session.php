@@ -103,11 +103,9 @@ class Session
     {
         if ($this->has("flash")) {
             $flash = $this->flash;
-            $this->clearSession("flash");
+            $this->clearSession('flash');
             return $flash;
         }
         return null;
     }
-
-  
 }

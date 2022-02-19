@@ -1,23 +1,25 @@
 <?php $v->layout('_theme') ?>
 
-<?php $v->start('styles') ?>
-<?php $v->end('styles') ?>
+<?php $v->start('top-right');  ?>
+<a class="btn btn-secondary" href="<?= get_route('admin.users') ?>">Usuarios</a>
+<?php $v->end('top-right');  ?>
 
-<form action="<?= get_route('admin.users.post') ?>" method="post" enctype="multipart/form-data">
+<form action="<?= get_route('admin.user.createOrUpdate') ?>" method="post" enctype="multipart/form-data">
     <?= csrf(); ?>
-    <div class="card">
+    <input type="hidden" name="id" value="<?= ($user->id ?? null) ?>">
+    <div class="card mb-3">
         <div class="card-body">
             <div class="row">
                 <div class="col-sm">
                     <div class="mb-2">
                         <label for="name">Nome</label>
-                        <input class="form-control" type="text" name="name" value="">
+                        <input class="form-control" type="text" name="name" value="<?= ($user->name ?? null) ?>">
                     </div>
                 </div>
                 <div class="col-sm">
                     <div class="mb-2">
                         <label for="email">E-mail</label>
-                        <input class="form-control" type="email" name="email" value="">
+                        <input class="form-control" type="email" name="email" value="<?= ($user->email ?? null) ?>">
                     </div>
                 </div>
                 <div class="col-sm mt-auto">
@@ -29,6 +31,3 @@
         </div>
     </div>
 </form>
-
-<?php $v->start('scripts') ?>
-<?php $v->end('scripts') ?>

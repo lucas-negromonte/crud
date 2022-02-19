@@ -103,31 +103,7 @@ class Message
             </div>";
     }
 
-    /**
-     * render: retorna um alert do bootstrap
-     * @return string
-     */
-    public function alert()
-    {
-        if (stristr($this->getType(), 'info')) {
-            $type = 'info';
-        } elseif (stristr($this->getType(), 'success')) {
-            $type = 'success';
-        } elseif (stristr($this->getType(), 'warning')) {
-            $type = 'warning';
-        } else {
-            $type = 'danger';
-        }
-
-        return '<div class="alert alert-' . $type . ' alert-dismissible fade show p-3" role="alert">
-                    ' . $this->getText() . '
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>';
-    }
-
-
+    
     /**
      * @return void
      */

@@ -3,7 +3,6 @@
 namespace Source\Core;
 
 use Source\Support\Message;
-use Source\Support\Pagination;
 
 /**
  * Model Core
@@ -12,7 +11,7 @@ use Source\Support\Pagination;
 abstract class Model
 {
     /** @var object|null */
-    protected $dataSet;
+    public $data;
 
     /** @var \PDOException */
     protected $fail;
@@ -32,7 +31,7 @@ abstract class Model
     /** @var string */
     protected $terms;
 
-    /** @var string|null|array */
+    /** @var string */
     protected $params;
 
     /** @var string */
@@ -43,9 +42,6 @@ abstract class Model
 
     /** @var int */
     protected $limit;
-
-    /** @var string */
-    protected $pagination;
 
     /** @var int */
     protected $offset;
@@ -59,29 +55,18 @@ abstract class Model
     /** @var array $entity database table */
     protected $required;
 
-    /** @var string active Class for PHP 5.3 */
-    protected $class;
-
-    /** @var string */
-    protected $fieldId;
-
-    /** @var int */
-    protected $lastId;
-
     /**
-     * @param string $entity
-     * @param string $fieldId
-     * @param array $protected
-     * @param array $required
-     * @param string $class
+     * Model contructor
+     * @param string $entity database table name
+     * @param array $protected table protected columns
+     * @param array $required table required columns
      */
-    public function __construct($entity, $fieldId, $protected, $required, $class)
+    public function __construct(string $entity, array $protected, array $required)
     {
-        $this->entity = $entity;
-        $this->fieldId = $fieldId;
-        $this->protected = $protected;
+        $dbName = CONF_DB_NAME;
+        $this->entity = "{$dbName}.{$entity}";
+        $this->protected = array_merge($protected, ["created_at", "updated_at"]);
         $this->required = $required;
-        $this->class = $class;
 
         $this->message = new Message();
     }
@@ -92,11 +77,10 @@ abstract class Model
      */
     public function __set($name, $value)
     {
-        if (empty($this->dataSet)) {
-            $this->dataSet = new \stdClass();
+        if (empty($this->data)) {
+            $this->data = new \stdClass();
         }
-
-        $this->dataSet->$name = $value;
+        $this->data->$name = $value;
     }
 
     /**
@@ -105,7 +89,7 @@ abstract class Model
      */
     public function __get($name)
     {
-        return empty($this->dataSet->$name) ? null : $this->dataSet->$name;
+        return $this->data->$name ?? null;
     }
 
     /**
@@ -114,27 +98,26 @@ abstract class Model
      */
     public function __isset($name)
     {
-        return isset($this->dataSet->$name);
+        return isset($this->data->$name);
     }
-
 
     public function data()
     {
-        return $this->dataSet;
+        return $this->data;
     }
 
     /**
      * @return \PDOException|null
      */
-    public function fail()
+    public function fail(): ?\PDOException
     {
         return $this->fail;
     }
 
     /**
-     * @return null|object
+     * @return Message|null
      */
-    public function message()
+    public function message(): ?Message
     {
         return $this->message;
     }
@@ -144,9 +127,10 @@ abstract class Model
      * 
      * @return Model
      */
-    private function setQuery()
+    private function setQuery(): Model
     {
         $distinct = (!empty($this->distinct) ? "DISTINCT({$this->distinct})" : '');
+
         if (!empty($distinct) && !empty($this->columns)) {
             $distinct .= ", ";
         }
@@ -154,7 +138,8 @@ abstract class Model
         $this->query = "
             SELECT {$distinct}{$this->columns} 
             FROM {$this->entity} 
-            {$this->join} {$this->terms}
+            {$this->join} 
+            {$this->terms}
         ";
         return $this;
     }
@@ -165,7 +150,7 @@ abstract class Model
      * @param string $column a receber o DISTINCT
      * @return Model
      */
-    public function distinct($column)
+    public function distinct(string $column): Model
     {
         $this->distinct = $column;
         $this->setQuery();
@@ -180,20 +165,21 @@ abstract class Model
      * @param string $entity Nome da tabela, se nulo vai pegar a do model
      * @return Model
      */
-    private function setTerms($terms, $params, $entity = null)
+    private function setTerms(?string $terms, ?string $params, ?string $entity = null): Model
     {
         $entity = empty($entity) ? $this->entity : $entity;
-        $arr = array(" AND ", " AND", "AND ", " OR ", " OR", "OR ");
-        $arrOp =  array("{AND}", "{OR}");
-        $arrOpReplace = array("AND", "OR");
-        $arrReplace = array(
+
+        $arr = [" AND ", " AND", "AND ", " OR ", " OR", "OR "];
+        $arrOp =  ["{AND}", "{OR}"];
+        $arrOpReplace = ["AND", "OR"];
+        $arrReplace = [
             " {AND} {$entity}.",
             " {AND} {$entity}.",
             " {AND} {$entity}.",
             " {OR} {$entity}.",
             " {OR} {$entity}.",
             " {OR} {$entity}."
-        );
+        ];
 
         $where = empty($this->terms) ? "WHERE" : "{$this->terms} AND";
 
@@ -206,10 +192,6 @@ abstract class Model
                 $terms
             )
         );
-
-        $this->terms = str_replace($entity . '. LENGTH', ' LENGTH', $this->terms);
-        $this->terms = str_replace($entity . '.LENGTH', ' LENGTH', $this->terms);
-
         parse_str($params, $params);
         $this->params = !empty($this->params) ? array_merge($this->params, $params) : $params;
 
@@ -221,7 +203,7 @@ abstract class Model
      * @param string|null $entity
      * @return Model
      */
-    private function setColumns($columns, $entity = null)
+    private function setColumns(string $columns, ?string $entity = null): Model
     {
         $entity = empty($entity) ? $this->entity : $entity;
 
@@ -229,20 +211,6 @@ abstract class Model
 
         $this->columns = "{$currentColumns}{$entity}." . str_replace(",", ", {$entity}.", $columns);
         $this->columns = str_replace(". ", ".", $this->columns);
-
-        $this->columns = strtolower($this->columns);
-
-        if (stristr($this->columns, 'count')) {
-            $this->columns = str_replace("{$entity}.count(", "count({$entity}.", $this->columns);
-        }
-
-        if (stristr($this->columns, 'sum')) {
-            $this->columns = str_replace("{$entity}.sum(", "sum({$entity}.", $this->columns);
-        }
-
-        if (stristr($this->columns, 'max')) {
-            $this->columns = str_replace("{$entity}.max(", "max({$entity}.", $this->columns);
-        }
 
         return $this;
     }
@@ -253,13 +221,16 @@ abstract class Model
      * @param string $columns
      * @return Model|mixed
      */
-    public function find($terms = null, $params = null, $columns = "*")
+    public function find(?string $terms, ?string $params = null, string $columns = "*"): Model
     {
         $this->setColumns($columns);
+
         if (!empty($terms)) {
             $this->setTerms($terms, $params);
         }
+
         $this->setQuery();
+
         return $this;
     }
 
@@ -268,9 +239,9 @@ abstract class Model
      * @param string $columns
      * @return null|mixed|Model
      */
-    public function findById($id, $columns = "*")
+    public function findById(?int $id, string $columns = "*"): ?Model
     {
-        $find = $this->find("{$this->fieldId} = :id", "id={$id}", $columns);
+        $find = $this->find("id = :id", "id={$id}", $columns);
         return $find->fetch();
     }
 
@@ -285,14 +256,14 @@ abstract class Model
      * @return Model
      */
     public function join(
-        $entity,
-        $joinId,
-        $terms = null,
-        $params = null,
-        $columns = null,
-        $entityJoinId = null,
-        $entityJoin = null
-    ) {
+        string $entity,
+        string $joinId,
+        ?string $terms = null,
+        ?string $params = null,
+        ?string $columns = null,
+        ?string $entityJoinId = null,
+        ?string $entityJoin = null
+    ): Model {
         $this->objJoin = new \stdClass();
         $this->objJoin->type = "INNER";
         $this->objJoin->entity = $entity;
@@ -317,14 +288,14 @@ abstract class Model
      * @return Model
      */
     public function leftJoin(
-        $entity,
-        $joinId,
-        $terms = null,
-        $params = null,
-        $columns = null,
-        $entityJoinId = null,
-        $entityJoin = null
-    ) {
+        string $entity,
+        string $joinId,
+        ?string $terms = null,
+        ?string $params = null,
+        ?string $columns = null,
+        ?string $entityJoinId = null,
+        ?string $entityJoin = null
+    ): Model {
         $this->objJoin = new \stdClass();
         $this->objJoin->type = "LEFT";
         $this->objJoin->entity = $entity;
@@ -349,14 +320,14 @@ abstract class Model
      * @return Model
      */
     public function rightJoin(
-        $entity,
-        $joinId,
-        $terms = null,
-        $params = null,
-        $columns = "*",
-        $entityJoinId = null,
-        $entityJoin = null
-    ) {
+        string $entity,
+        string $joinId,
+        ?string $terms = null,
+        ?string $params = null,
+        ?string $columns = "*",
+        ?string $entityJoinId = null,
+        ?string $entityJoin = null
+    ): Model {
         $this->objJoin = new \stdClass();
         $this->objJoin->type = "RIGHT";
         $this->objJoin->entity = $entity;
@@ -373,7 +344,7 @@ abstract class Model
     /**
      * @return mixed|Model
      */
-    private function setJoin()
+    private function setJoin(): Model
     {
         $entityJoin = empty($this->objJoin->entityJoin) ? $this->entity : $this->objJoin->entityJoin;
         $entityJoinId = empty($this->objJoin->entityJoinId) ? $this->protected[0] : $this->objJoin->entityJoinId;
@@ -385,8 +356,9 @@ abstract class Model
         $columns = !empty($this->objJoin->columns) ? $this->objJoin->columns : "*";
         $this->setColumns($columns, $this->objJoin->entity);
 
-        $join = "{$this->objJoin->type} JOIN {$this->objJoin->entity} ON ({$entityJoin}.{$entityJoinId} = {$this->objJoin->entity}.{$this->objJoin->joinId})
-            ";
+        $join = "{$this->objJoin->type} JOIN {$this->objJoin->entity} 
+            ON ({$entityJoin}.{$entityJoinId} = {$this->objJoin->entity}.{$this->objJoin->joinId})
+        ";
         $this->join = !empty($this->join) ? $this->join . $join : $join;
 
         $this->setQuery();
@@ -394,68 +366,93 @@ abstract class Model
         return $this;
     }
 
+
+    // ADVANCED JOIN
+    public function advancedJoin(string $entity, string $onClausule, ?string $terms = null, ?string $params = null, ?string $columns = null): Model
+    {
+        $this->objJoin = new \stdClass();
+        $this->objJoin->entity = $entity;
+        $this->objJoin->type = "INNER";
+        $this->objJoin->advancedOnClausule = $onClausule;
+        $this->objJoin->terms = $terms;
+        $this->objJoin->params = $params;
+        $this->objJoin->columns = $columns;
+
+        return $this->setAdvancedJoin();
+    }
+
+    public function advancedLeftJoin(string $entity, string $onClausule, ?string $terms = null, ?string $params = null, ?string $columns = null): Model
+    {
+        $this->objJoin = new \stdClass();
+        $this->objJoin->entity = $entity;
+        $this->objJoin->type = "LEFT";
+        $this->objJoin->advancedOnClausule = $onClausule;
+        $this->objJoin->terms = $terms;
+        $this->objJoin->params = $params;
+        $this->objJoin->columns = $columns;
+
+        return $this->setAdvancedJoin();
+    }
+
+    public function advancedRightJoin(string $entity, string $onClausule, ?string $terms = null, ?string $params = null, ?string $columns = null): Model
+    {
+        $this->objJoin = new \stdClass();
+        $this->objJoin->entity = $entity;
+        $this->objJoin->type = "RIGHT";
+        $this->objJoin->advancedOnClausule = $onClausule;
+        $this->objJoin->terms = $terms;
+        $this->objJoin->params = $params;
+        $this->objJoin->columns = $columns;
+
+        return $this->setAdvancedJoin();
+    }
+
+    public function setAdvancedJoin(): Model
+    {
+
+        if (!empty($this->objJoin->terms)) {
+            $this->setTerms($this->objJoin->terms, $this->objJoin->params, $this->objJoin->entity);
+        }
+        if (!empty($this->objJoin->columns)) {
+            $this->setColumns($this->objJoin->columns, $this->objJoin->entity);
+        }
+
+        $join = "{$this->objJoin->type} JOIN {$this->objJoin->entity} 
+            ON ({$this->objJoin->advancedOnClausule})
+        ";
+        $this->join = !empty($this->join) ? $this->join . $join : $join;
+
+        $this->setQuery();
+
+        return $this;
+    }
+
+
     /**
      * @param string $column
      * @return Model|null
      */
-    public function group($columns)
+    public function group(string $columns): ?Model
     {
         $this->group = " GROUP BY {$columns}";
         return $this;
     }
 
     /**
-     * @param string $column
-     * @return Model|null
-     */
-    public function group_last($columnOrder, $desc = false)
-    {
-        $desc = empty($desc) ? "" : " DESC";
-        $this->group_last = " GROUP BY {$columnOrder}{$desc}";
-        return $this;
-    }
-
-    /**
-     * @param string $column
-     * @return Model|null
-     */
-    public function cont_sub($count)
-    {
-        $this->cont_sub = " {$count} ";
-        return $this;
-    }
-
-    /**
      * @param string $columnOrder
      * @return Model
      */
-    public function order($columnOrder, $desc = false)
+    public function order(string $columnOrder): Model
     {
-        $desc = empty($desc) ? "" : " DESC";
-        $this->order = " ORDER BY {$columnOrder}{$desc}";
+        $this->order = " ORDER BY {$columnOrder}";
         return $this;
     }
-
-
-    /**
-     * @param string $columnOrder
-     * @return Model
-     */
-    public function order_last($columnOrder, $desc = false)
-    {
-        $desc = empty($desc) ? "" : " DESC";
-        $this->order_last = " ORDER BY {$columnOrder}{$desc}";
-        return $this;
-    }
-
-
-
 
     /**
      * @param integer $limit
      * @return Model
      */
-    public function limit($limit)
+    public function limit(int $limit): Model
     {
         $this->limit = " LIMIT {$limit}";
         return $this;
@@ -465,53 +462,33 @@ abstract class Model
      * @param integer $offset
      * @return Model
      */
-    public function offset($offset)
+    public function offset(int $offset): Model
     {
         $this->offset = " OFFSET {$offset}";
         return $this;
     }
 
-
-
-    public function pagination($count = false)
-    {
-        $pagination = new Pagination();
-        $this->pagination = $pagination->basePagination($count);
-        return $this;
-    }
-
-
     /**
      * @param boolean $all
      * @return null|array|mixed|Model
      */
-    public function fetch($all = false)
+    public function fetch(bool $all = false)
     {
 
         try {
-            $limit = (!empty($this->pagination) ? $this->pagination : $this->limit . $this->offset);
-            if (!empty($this->group_last) || !empty($this->order_last)) {
-                $count_sub = (!empty($this->cont_sub) ? ',' . $this->cont_sub : null);
-                $query = "SELECT *$count_sub FROM ( 
-                    " . $this->query . $this->group . $this->order . "
-                     ) AS meu_select " . ($this->group_last ?? null) . ($this->order_last ?? null) .  " " . $limit;
-            } else {
-                $query = $this->query . $this->group . $this->order . $limit;
-            }
-            $stmt = Connect::getInstance()->prepare($query);
-
-            $stmt->execute($this->params);
+            $stmt = Connect::getInstance()
+                ->prepare($this->query . $this->group . $this->order . $this->limit . $this->offset);
+            $stmt->execute((array)$this->params);
 
             if (!$stmt->rowCount()) {
                 return null;
             }
 
             if ($all) {
-                return $stmt->fetchAll(\PDO::FETCH_CLASS, $this->class);
+                return $stmt->fetchAll(\PDO::FETCH_CLASS, static::class);
             }
 
-            return $stmt->fetchObject($this->class);
-            // return $stmt->fetchObject(static::class);
+            return $stmt->fetchObject(static::class);
         } catch (\PDOException $e) {
             $this->fail = $e;
             return null;
@@ -519,34 +496,14 @@ abstract class Model
     }
 
     /**
-     * @param string $key 
+     * @param string $key
      * @return integer
      */
-    public function count($key = "id")
+    public function count(string $key = "id"): int
     {
-
-        // var_dump($this->params );
-        // exit;
-        $limit = (!empty($this->pagination) ? $this->pagination : $this->limit . $this->offset);
-        if (!empty($this->group_last) || !empty($this->order_last)) {
-            $count_sub = (!empty($this->cont_sub) ? ',' . $this->cont_sub : null);
-            $query = "SELECT *$count_sub FROM ( 
-                " . $this->query . $this->group . $this->order . "
-                 ) AS meu_select " . ($this->group_last ?? null) . ($this->order_last ?? null) .  " " . $limit;
-        } else {
-            $query = $this->query . $this->group . $this->order . $limit;
-        }
-
-        // var_dump('<pre>',$query,$this->params);
-        // exit;
-        try {
-            $stmt = Connect::getInstance()->prepare($query);
-            $stmt->execute($this->params);
-            return $stmt->rowCount();
-        } catch (\PDOException $e) {
-            $this->fail = $e;
-            return null;
-        }
+        $stmt = Connect::getInstance()->prepare($this->query);
+        $stmt->execute((array)$this->params);
+        return $stmt->rowCount();
     }
 
 
@@ -555,17 +512,13 @@ abstract class Model
      * @param string|null $params
      * @return null|\PDOStatement
      */
-    protected function read($select, $params = null, $fetchAll = true)
+    public function read(string $select, string $params = null): ?\PDOStatement
     {
         try {
-
-            // var_dump('<pre>',$select);
-
             $stmt = Connect::getInstance()->prepare($select);
             if ($params) {
                 parse_str($params, $params);
-                $params = (array)$params;
-                foreach ($params as $key => $value) {
+                foreach ((array)$params as $key => $value) {
                     if ($key == 'limit' || $key == 'offset') {
                         $stmt->bindValue(":{$key}", $value, \PDO::PARAM_INT);
                     } else {
@@ -575,19 +528,9 @@ abstract class Model
             }
 
             $stmt->execute();
-
-            if (!$stmt->rowCount()) {
-                return null;
-            }
-
-            if ($fetchAll) {
-                return $stmt->fetchAll(\PDO::FETCH_CLASS, $this->class);
-            }
-
-            return $stmt->fetchObject($this->class);
-        } catch (\PDOException $e) {
-
-            $this->fail = $e;
+            return $stmt;
+        } catch (\PDOException $exception) {
+            $this->fail = $exception;
             return null;
         }
     }
@@ -596,16 +539,19 @@ abstract class Model
      * @param array $data
      * @return int|null
      */
-    protected function create($data)
+    protected function create(array $data): ?int
     {
         try {
 
             $columns = implode(", ", array_keys($data));
             $values = ":" . implode(", :", array_keys($data));
+
+            // var_dump("INSERT INTO {$this->entity} ({$columns}) VALUES ({$values})");
+            // var_dump($this->filter($data));
+            // exit;
             $stmt = Connect::getInstance()->prepare("INSERT INTO {$this->entity} ({$columns}) VALUES ({$values})");
             $stmt->execute($this->filter($data));
-            $this->lastId = Connect::getInstance()->lastInsertId();
-            return $this->lastId;
+            return connect::getInstance()->lastInsertId();
         } catch (\PDOException $e) {
             $this->fail = $e;
             return null;
@@ -618,20 +564,23 @@ abstract class Model
      * @param string $params
      * @return int|null
      */
-    protected function update($data, $terms, $params)
+    protected function update(array $data, string $terms, string $params): ?int
     {
         try {
-
-            $dataSet = array();
+            $dataSet = [];
             foreach ($data as $bind => $value) {
-                $dataSet[] = " {$this->entity}.{$bind} = :{$bind}";
+                $dataSet[] = "{$bind} = :{$bind}";
             }
             $dataSet = implode(", ", $dataSet);
             parse_str($params, $params);
 
+            // var_dump("UPDATE {$this->entity} SET {$dataSet} WHERE {$terms}");
+            // var_dump($this->filter(array_merge($data, $params)));
+            // exit;
+
             $stmt = Connect::getInstance()->prepare("UPDATE {$this->entity} SET {$dataSet} WHERE {$terms}");
             $stmt->execute($this->filter(array_merge($data, $params)));
-            return ($stmt->rowCount() ? $stmt->rowCount() : 1);
+            return ($stmt->rowCount() ?? 1);
         } catch (\PDOException $e) {
             $this->fail = $e;
             return null;
@@ -639,71 +588,37 @@ abstract class Model
     }
 
     /**
-     * Verifica dados antes de inserir. Método criado para validar a inserção de dados em mais de uma
-     * tabela em uma única requisição. Criado para não precisar usar apenas beginTransaction()
-     *
      * @return bool
      */
-    public function beforeSave()
+    public function save(): bool
     {
         if (!$this->required()) {
-            $this->message->warning('Por favor informe todos os campos');
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * @return bool
-     */
-    public function save()
-    {
-
-
-        if (!$this->required()) {
-            $this->message->warning('Por favor informe todos os campos');
+            $this->message->warning('Todos os campos são obrigatórios, Verifique os dados');
             return false;
         }
 
-        // Verificando se existe dados no banco
-        $fieldId = $this->fieldId;
-        $hasData = $this->findById($this->$fieldId, $fieldId);
-
-        $update = (!empty($hasData) && !empty($this->$fieldId) ? true : false);
-
-        // Update
-        if ($update) {
-            $id = $this->$fieldId;
-            $this->update($this->safe(), "{$this->fieldId} = :id", "id={$id}");
+        /** Update */
+        if (!empty($this->id)) {
+            $id = $this->id;
+            $this->update($this->safe(), "id = :id", "id={$id}");
             if ($this->fail()) {
-                $this->message->error('Erro ao atualizar - verifique os dados');
+                $this->message->error('Não foi possivel atualizar verifique os dados');
                 return false;
             }
         }
 
-        // Create
-        if (!$update) {
+        /** Create */
+        if (empty($this->id)) {
             $id = $this->create($this->safe());
+
             if ($this->fail()) {
-                $this->message->error('Erro ao inserir - verifique os dados');
+                $this->message->error('Não foi possivel inserir, verifique os dados');
                 return false;
             }
         }
 
-
-        $data = $this->findById($id);
-        if ($data) {
-            $this->dataSet = $data->data();
-        }
+        $this->id = $id;
         return true;
-    }
-
-    /**
-     * @return int
-     */
-    public function lastId()
-    {
-        return $this->lastId;
     }
 
     /**
@@ -711,11 +626,10 @@ abstract class Model
      * @param null|string $params
      * @return bool
      */
-    public function delete($terms, $params)
+    public function delete(string $terms, ?string $params): bool
     {
         try {
             $stmt = Connect::getInstance()->prepare("DELETE FROM {$this->entity} WHERE {$terms}");
-
             if ($params) {
                 parse_str($params, $params);
                 $stmt->execute((array)$params);
@@ -724,8 +638,8 @@ abstract class Model
 
             $stmt->execute();
             return true;
-        } catch (\PDOException $e) {
-            $this->fail = $e;
+        } catch (\PDOException $exception) {
+            $this->fail = $exception;
             return false;
         }
     }
@@ -734,14 +648,13 @@ abstract class Model
      * Remove um objeto de modelo ativo
      * @return bool
      */
-    public function destroy()
+    public function destroy(): bool
     {
-        $fieldId = $this->fieldId;
-        if (empty($this->$fieldId)) {
+        if (empty($this->id)) {
             return false;
         }
 
-        $destroy = $this->delete("{$fieldId} = :id", "id={$this->$fieldId}");
+        $destroy = $this->delete("id = :id", "id={$this->id}");
         return $destroy;
     }
 
@@ -750,37 +663,20 @@ abstract class Model
      *
      * @return Model
      */
-    public function debug($consoleLog = false)
+    public function debug(bool $consoleLog = false): Model
     {
-        $limit = (!empty($this->pagination) ? $this->pagination : $this->limit . $this->offset);
-
-
-        if (!empty($this->group_last) || !empty($this->order_last)) {
-            $count_sub = (!empty($this->cont_sub) ? ',' . $this->cont_sub : null);
-            $query = "SELECT *$count_sub FROM ( 
-                " . $this->query . $this->group . $this->order . "
-                 ) AS meu_select " . ($this->group_last ?? null) . ($this->order_last ?? null) .  " " . $limit;
-        } else {
-            $query = $this->query . $this->group . $this->order . $limit;
-        }
-        echo '<pre>' . $query;
+        echo '<pre>';
+        echo $this->query . $this->group . $this->order . $this->limit;
         exit;
-    }
-
-    public function setParams($params): Model
-    {
-        parse_str($params, $params);
-        $this->params = $params;
-        return $this;
     }
 
 
     /**
      * @return array|null
      */
-    protected function safe()
+    protected function safe(): ?array
     {
-        $safe = (array) $this->dataSet;
+        $safe = (array) $this->data;
         foreach ($this->protected as $unset) {
             unset($safe[$unset]);
         }
@@ -791,40 +687,19 @@ abstract class Model
      * @param array $data
      * @return array|null
      */
-    private function filter($data)
+    private function filter(array $data): ?array
     {
-        $filter = array();
+        $filter = [];
         foreach ($data as $key => $value) {
-            $filter[$key] = (is_null($value) ? null : htmlspecialchars($value));
+            $filter[$key] = (is_null($value) ? null : filter_var($value, FILTER_SANITIZE_FULL_SPECIAL_CHARS));
         }
         return $filter;
     }
 
-    public function columns($columns)
-    {
-        (empty($this->columns) ? $this->columns = $columns : $this->columns .= ' ' . $columns);
-        return $this;
-    }
-
-    public function terms($terms)
-    {
-        (empty($this->terms) ? $this->terms = $terms : $this->terms .= ' ' . $terms);
-        return $this;
-    }
-
-
-    public function params($params)
-    {
-        parse_str($params, $params);
-        $this->params = !empty($this->params) ? array_merge($this->params, $params) : $params;
-        return $this;
-    }
-
-
     /**
      * @return boolean
      */
-    protected function required()
+    protected function required(): bool
     {
         $data = (array) $this->data();
         foreach ($this->required as $field) {

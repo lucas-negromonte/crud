@@ -87,14 +87,12 @@ function theme($path = null, $theme = CONF_VIEW_THEME)
  */
 function flash_message()
 {
-    // $session = new \Source\Core\Session();
-    // if ($session->flash()) {
-    //     echo $session->flash();
-    // }
-    if ($flash = session()->flash()) {
+    $session = new \Source\Core\Session();
+    $flash = $session->flash();
+    if ($flash) {
         echo $flash;
     }
-    return null;
+    return;
 }
 
 /**

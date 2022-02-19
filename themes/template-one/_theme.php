@@ -14,8 +14,29 @@
 <body class="d-flex flex-column h-100 bg-secondary">
     <header>
         <div class="py-3 text-center text-md-left  bg-light">
-            <i class="bi bi-person-bounding-box text-secondary" style="font-size: xxx-large;"></i>
+            <div class="container">
+                <div class="row">
+                    <div class="col-sm-12 col-md-6 text-left">
+                        <div class="row">
+                            <div class="col-sm-12 col-md-3">
+                                <i class="bi bi-person-bounding-box text-secondary" style="font-size: xxx-large;"></i>
+
+                            </div>
+                            <div class="col-sm col-md-9 text-start mt-auto">
+                                <h5 class="text-secondary"><?= ($title ?? null) ?></h5>
+                                <small class="text-secondary"><?= ($sub_title ?? null) ?></small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 col-md-6 mt-auto text-end">
+                        <?= $v->section("top-right"); ?>
+                    </div>
+                </div>
+            </div>
+
         </div>
+
+
     </header>
 
     <!-- Begin page content -->

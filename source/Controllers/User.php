@@ -3,7 +3,7 @@
 namespace Source\Controllers;
 
 use Source\Core\Controller;
-
+use Source\Models\User as ModelsUser;
 
 class User extends Controller
 {
@@ -12,15 +12,31 @@ class User extends Controller
         parent::__construct();
     }
 
+    /**
+     * Listar usuarios
+     *
+     * @return void
+     */
+    public function index(): void
+    {
+        $users = (new ModelsUser)->find('')->order('id desc')->fetch(true);
+        echo $this->view->render("views/user/index", array(
+            "title" => "Lista de usuarios",
+            "sub_title" => "Mostrar todos usuarios do sistema",
+            "users" => $users,
+        ));
+    }
 
     /**
-     * Listar | Editar | Criar
+     * Editar | Criar
      *
      * @param array|null $data
      * @return void
      */
-    public function users(?array $data = null)
+    public function createOrUpdate(?array $data = null)
     {
+        $id = (!empty($data['id']) && is_numeric($data['id']) ? $data['id'] : null);
+
         // Ajax
         if (!empty($data['csrf_token'])) {
             if (!csrf_check($data)) {
@@ -44,16 +60,66 @@ class User extends Controller
                 return;
             }
 
+            $user = (new ModelsUser)->find('email=:email AND id<>:id', "email={$data['email']}&id={$id}")->fetch();
+            if ($user) {
+                $json['error'] = '[name=email]';
+                $json["message"] = $this->message->error('Já existe um usuario cadastrado com esse email')->render();
+                echo json_encode($json);
+                return;
+            }
 
-            $json["message"] = $this->message->success('Dados validados com sucesso')->render();
+            $user = (new ModelsUser)->findById($id);
+            if (!$user) {
+                $user = new ModelsUser;
+            }
+            $user->name = $data['name'];
+            $user->email = $data['email'];
+            if (!$user->save()) {
+                $json["message"] = $user->message()->render();
+                echo json_encode($json);
+                return;
+            }
+
+            $json["message"] = $this->message->success('Usuario ' . (!empty($id) ? 'atualizado' : 'criado') . ' com sucesso')->flash();
+            $json["redirect"] = get_route('admin.users');
             echo json_encode($json);
             return;
         }
 
         // View
-
-        echo $this->view->render("users", array(
-            "title" => "Usuarios",
+        $user = (new ModelsUser)->findById($id);
+        echo $this->view->render("views/user/create-or-update", array(
+            "title" => ($user ? 'Editar usuario' : 'Novo usuario'),
+            "sub_title" => ($user ? "Atualizar os dados do usuario {$user->name}" : 'Criar um novo usuario'),
+            "user" => $user,
         ));
+    }
+
+    /**
+     * Apagar usuario
+     *
+     * @param array|null $data
+     * @return void
+     */
+    public function destroy(array $data = null): void
+    {
+        $id = (!empty($data['id']) && is_numeric($data['id']) ? $data['id'] : null);
+        $user = (new ModelsUser)->findById($id);
+        if (!$user) {
+            $json["message"] = $this->message->error('Usuario não encontrado')->render();
+            echo json_encode($json);
+            return;
+        }
+
+        if (!$user->destroy()) {
+            $json["message"] = $user->message()->render();
+            echo json_encode($json);
+            return;
+        }
+
+        $json['reload'] = true;
+        $json['message'] =  $this->message->success('Usuario removido com sucesso')->flash();
+        echo json_encode($json);
+        return;
     }
 }

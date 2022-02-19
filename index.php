@@ -19,9 +19,11 @@ $route = new Router(url(), ":");
 
 /** Dashboard Routes */
 $route->namespace("Source\Controllers")->group(null);
-$route->get("/", "User:users");
-$route->get("/users", "User:users", 'admin.users');
-$route->post("/users", "User:users", 'admin.users.post');
+$route->get("/", "User:index");
+$route->get("/users", "User:index", 'admin.users');
+$route->get("/user/{id}", "User:createOrUpdate", 'admin.user');
+$route->post("/user", "User:createOrUpdate", 'admin.user.createOrUpdate'); 
+$route->post("/user/destroy", "User:destroy", 'admin.user.destroy');
 
 
 /** Salvar rota na sessão */
