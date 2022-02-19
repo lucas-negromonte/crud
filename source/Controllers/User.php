@@ -40,7 +40,7 @@ class User extends Controller
         // Ajax
         if (!empty($data['csrf_token'])) {
             if (!csrf_check($data)) {
-                $json["message"] = $this->message->error('Sessão expirou, por favor atualize a página.')->render();
+                $json["message"] = $this->message->warning('Sessão expirou, por favor atualize a página.')->render();
                 echo json_encode($json);
                 return;
             }
@@ -63,7 +63,7 @@ class User extends Controller
             $user = (new ModelsUser)->find('email=:email AND id<>:id', "email={$data['email']}&id={$id}")->fetch();
             if ($user) {
                 $json['error'] = '[name=email]';
-                $json["message"] = $this->message->error('Já existe um usuario cadastrado com esse email')->render();
+                $json["message"] = $this->message->info('Já existe um usuario cadastrado com esse email')->render();
                 echo json_encode($json);
                 return;
             }
