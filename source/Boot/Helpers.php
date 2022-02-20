@@ -2,14 +2,14 @@
 
 
 /**
+ * buscar url
+ * 
  * @param string $path
  * @return string
  */
 function url($path = null)
 {
     if (stristr($_SERVER['HTTP_HOST'], "localhost")) {
-        // if (str_replace("www.", "", $_SERVER['HTTP_HOST']) == "localhost") {
-
         if ($path) {
             return CONF_URL_TEST .
                 "/" .
@@ -60,6 +60,8 @@ function get_route($route_name = '', $params = null)
 
 
 /**
+ * buscar url da view
+ * 
  * @param string|null $path
  * @param string $theme
  * @return string
@@ -83,6 +85,8 @@ function theme($path = null, $theme = CONF_VIEW_THEME)
 
 
 /**
+ * mostrar mensagem flash na view
+ * 
  * @return null|string
  */
 function flash_message()
@@ -96,6 +100,8 @@ function flash_message()
 }
 
 /**
+ * retorna uma instancia da sessão
+ * 
  * @return \Source\Core\Session
  */
 function session()
@@ -106,6 +112,8 @@ function session()
 
 
 /**
+ * criar um input token para formularios
+ * 
  * @return string 
  */
 function csrf()
@@ -116,6 +124,8 @@ function csrf()
 }
 
 /**
+ * checar token de formulario
+ * 
  * @return string 
  */
 function csrf_check(?array $data = null)
@@ -130,6 +140,8 @@ function csrf_check(?array $data = null)
 
 
 /**
+ * validar email
+ * 
  * @param string $email
  * @return bool
  */
@@ -138,22 +150,21 @@ function is_email($email)
     return filter_var($email, FILTER_VALIDATE_EMAIL);
 }
 
+/**
+ * Validar CPF
+ *
+ * @param $cpf
+ * @return boolean
+ */
 function is_cpf($cpf)
 {
-    // Extrai somente os números
     $cpf = preg_replace('/[^0-9]/is', '', $cpf);
-
-    // Verifica se foi informado todos os digitos corretamente
     if (strlen($cpf) != 11) {
         return false;
     }
-
-    // Verifica se foi informada uma sequência de digitos repetidos. Ex: 111.111.111-11
     if (preg_match('/(\d)\1{10}/', $cpf)) {
         return false;
     }
-
-    // Faz o calculo para validar o CPF
     for ($t = 9; $t < 11; $t++) {
         for ($d = 0, $c = 0; $c < $t; $c++) {
             $d += $cpf[$c] * (($t + 1) - $c);
@@ -164,4 +175,37 @@ function is_cpf($cpf)
         }
     }
     return true;
+}
+
+/**
+ * 
+ * @param string $string
+ * @return string
+ */
+function only_numbers($string)
+{
+    return preg_replace("/[^0-9]/", "", $string);
+}
+
+
+/**
+ * Função para limpar string - remove qualquer caracteres especial
+ * 
+ * @param string $string
+ * @return string
+ */
+function clear_string($string)
+{
+    return remove_excess_space(preg_replace("/[^A-Za-zà-úÀ-Ú\s]/", "", $string));
+}
+
+/**
+ * Remover exesso de espaço em branco
+ *
+ * @param string|null $string
+ * @return void
+ */
+function remove_excess_space(?string $string = null)
+{
+    return trim(preg_replace('/\s\s+/', ' ', $string));
 }

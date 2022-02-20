@@ -48,7 +48,7 @@ class Message
     public function info($message)
     {
         $this->type = "message info bg-info"; // border-info text-info";
-        $this->icon = "fa-comment-dots";
+        $this->icon = "bi-info-circle";
         $this->text = $this->filter($message);
         return $this;
     }
@@ -60,7 +60,7 @@ class Message
     public function success($message)
     {
         $this->type = "message success bg-success"; // border-success text-success";
-        $this->icon = "fa-check";
+        $this->icon = "bi-check-circle";
         $this->text = $this->filter($message);
         return $this;
     }
@@ -72,7 +72,7 @@ class Message
     public function warning($message)
     {
         $this->type = "message warning bg-warning"; // border-warning text-warning";
-        $this->icon = "fa-exclamation-triangle";
+        $this->icon = "bi-shield-exclamation";
         $this->text = $this->filter($message);
         return $this;
     }
@@ -84,7 +84,7 @@ class Message
     public function error($message)
     {
         $this->type = "message error bg-danger"; // border-danger text-danger";
-        $this->icon = "fa-ban";
+        $this->icon = "bi-x-circle";
         $this->text = $this->filter($message);
         return $this;
     }
@@ -97,7 +97,7 @@ class Message
     {
         return "
             <div class='{$this->getType()}'>
-                <i class='fas {$this->icon} mr-2'></i>
+                <i class='bi {$this->icon} me-2'></i>
                 {$this->getText()}
                 <span class='close'>x</span>
             </div>";

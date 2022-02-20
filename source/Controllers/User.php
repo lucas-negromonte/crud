@@ -40,18 +40,34 @@ class User extends Controller
         // Ajax
         if (!empty($data['csrf_token'])) {
             if (!csrf_check($data)) {
-                $json["message"] = $this->message->error('Sessão expirou, por favor atualize a página.')->render();
+                $json["message"] = $this->message->warning('Sessão expirou, por favor atualize a página.')->render();
                 echo json_encode($json);
                 return;
             }
 
-            $name = (!empty($data['name']) ? filter_var($data['name'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : null);
+            $name = (!empty($data['name']) ? clear_string($data['name']) : null);
             if (empty($name)) {
                 $json['error'] = '[name=name]';
                 $json["message"] = $this->message->error('Por favor informe um nome valido')->render();
                 echo json_encode($json);
                 return;
             }
+
+            if (strlen($name) < 3 ) {
+                $json['error'] = '[name=name]';
+                $json["message"] = $this->message->error('Nome não pode ser menor que 3 caracteres')->render();
+                echo json_encode($json);
+                return;
+            }
+
+
+            if (strlen($name) > 50 ) {
+                $json['error'] = '[name=name]';
+                $json["message"] = $this->message->error('Nome não pode ser maior que 50 caracteres')->render();
+                echo json_encode($json);
+                return;
+            }
+
 
             if (empty($data['email']) || !is_email($data['email'])) {
                 $json['error'] = '[name=email]';
@@ -60,10 +76,17 @@ class User extends Controller
                 return;
             }
 
+            if (strlen($data['email']) > 50 ) {
+                $json['error'] = '[name=email]';
+                $json["message"] = $this->message->error('Email não pode ser maior que 50 caracteres')->render();
+                echo json_encode($json);
+                return;
+            }
+
             $user = (new ModelsUser)->find('email=:email AND id<>:id', "email={$data['email']}&id={$id}")->fetch();
             if ($user) {
                 $json['error'] = '[name=email]';
-                $json["message"] = $this->message->error('Já existe um usuario cadastrado com esse email')->render();
+                $json["message"] = $this->message->info('Já existe um usuario cadastrado com esse email')->render();
                 echo json_encode($json);
                 return;
             }
@@ -72,7 +95,7 @@ class User extends Controller
             if (!$user) {
                 $user = new ModelsUser;
             }
-            $user->name = $data['name'];
+            $user->name = $name;
             $user->email = $data['email'];
             if (!$user->save()) {
                 $json["message"] = $user->message()->render();

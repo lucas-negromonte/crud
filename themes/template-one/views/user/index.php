@@ -27,7 +27,7 @@
                             <td><?= $user->email ?></td>
                             <td class="text-center">
                                 <a class="btn text-primary" href="<?= get_route('admin.user', "id={$user->id}") ?>"><i class="bi bi-pencil-square"></i></a>
-                                <button class="btn text-danger" data-update="true" data-url="<?= get_route('admin.user.destroy') ?>" data-id="<?= $user->id ?>"><i class="bi bi-trash"></i></button>
+                                <button class="btn text-danger" data-remove="<?= get_route('admin.user.destroy') ?>"  data-id="<?= $user->id ?>"><i class="bi bi-trash"></i></button>
                             </td>
                         </tr>
                     <?php endforeach; ?>

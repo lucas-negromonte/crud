@@ -25,9 +25,6 @@ abstract class Model
     /** @var string */
     protected $join;
 
-    /** @var object */
-    protected $objJoin;
-
     /** @var string */
     protected $terms;
 
@@ -63,11 +60,9 @@ abstract class Model
      */
     public function __construct(string $entity, array $protected, array $required)
     {
-        $dbName = CONF_DB_NAME;
-        $this->entity = "{$dbName}.{$entity}";
+        $this->entity = CONF_DB_NAME . ".{$entity}";
         $this->protected = array_merge($protected, ["created_at", "updated_at"]);
         $this->required = $required;
-
         $this->message = new Message();
     }
 
@@ -246,189 +241,6 @@ abstract class Model
     }
 
     /**
-     * @param string $entity tabela a ser relacionada
-     * @param string $joinId id da tabela a ser relacionada que vai fazer parte do join
-     * @param string|null $terms termos busca(where) para a tabela da relação
-     * @param string|null $params 
-     * @param string|null $columns colunas a ser buscadas desta tabela da relação
-     * @param string|null $entityJoinId caso queira mudar o id da tabela base na relação, por padrão é a chave primária
-     * @param string|null $entityJoin caso queira mudar a tabela base da relação
-     * @return Model
-     */
-    public function join(
-        string $entity,
-        string $joinId,
-        ?string $terms = null,
-        ?string $params = null,
-        ?string $columns = null,
-        ?string $entityJoinId = null,
-        ?string $entityJoin = null
-    ): Model {
-        $this->objJoin = new \stdClass();
-        $this->objJoin->type = "INNER";
-        $this->objJoin->entity = $entity;
-        $this->objJoin->joinId = $joinId;
-        $this->objJoin->terms = $terms;
-        $this->objJoin->params = $params;
-        $this->objJoin->columns = $columns;
-        $this->objJoin->entityJoinId = $entityJoinId;
-        $this->objJoin->entityJoin = $entityJoin;
-
-        return $this->setJoin();
-    }
-
-    /**
-     * @param string $entity
-     * @param string $joinId
-     * @param string|null $terms
-     * @param string|null $params
-     * @param string|null $columns
-     * @param string|null $entityJoinId
-     * @param string|null $entityJoin
-     * @return Model
-     */
-    public function leftJoin(
-        string $entity,
-        string $joinId,
-        ?string $terms = null,
-        ?string $params = null,
-        ?string $columns = null,
-        ?string $entityJoinId = null,
-        ?string $entityJoin = null
-    ): Model {
-        $this->objJoin = new \stdClass();
-        $this->objJoin->type = "LEFT";
-        $this->objJoin->entity = $entity;
-        $this->objJoin->joinId = $joinId;
-        $this->objJoin->terms = $terms;
-        $this->objJoin->params = $params;
-        $this->objJoin->columns = $columns;
-        $this->objJoin->entityJoinId = $entityJoinId;
-        $this->objJoin->entityJoin = $entityJoin;
-
-        return $this->setJoin();
-    }
-
-    /**
-     * @param string $entity
-     * @param string $joinId
-     * @param string|null $terms
-     * @param string|null $params
-     * @param string|null $columns
-     * @param string|null $entityJoinId
-     * @param string|null $entityJoin
-     * @return Model
-     */
-    public function rightJoin(
-        string $entity,
-        string $joinId,
-        ?string $terms = null,
-        ?string $params = null,
-        ?string $columns = "*",
-        ?string $entityJoinId = null,
-        ?string $entityJoin = null
-    ): Model {
-        $this->objJoin = new \stdClass();
-        $this->objJoin->type = "RIGHT";
-        $this->objJoin->entity = $entity;
-        $this->objJoin->joinId = $joinId;
-        $this->objJoin->terms = $terms;
-        $this->objJoin->params = $params;
-        $this->objJoin->columns = $columns;
-        $this->objJoin->entityJoinId = $entityJoinId;
-        $this->objJoin->entityJoin = $entityJoin;
-
-        return $this->setJoin();
-    }
-
-    /**
-     * @return mixed|Model
-     */
-    private function setJoin(): Model
-    {
-        $entityJoin = empty($this->objJoin->entityJoin) ? $this->entity : $this->objJoin->entityJoin;
-        $entityJoinId = empty($this->objJoin->entityJoinId) ? $this->protected[0] : $this->objJoin->entityJoinId;
-
-        if (!empty($this->objJoin->terms)) {
-            $this->setTerms($this->objJoin->terms, $this->objJoin->params, $this->objJoin->entity);
-        }
-
-        $columns = !empty($this->objJoin->columns) ? $this->objJoin->columns : "*";
-        $this->setColumns($columns, $this->objJoin->entity);
-
-        $join = "{$this->objJoin->type} JOIN {$this->objJoin->entity} 
-            ON ({$entityJoin}.{$entityJoinId} = {$this->objJoin->entity}.{$this->objJoin->joinId})
-        ";
-        $this->join = !empty($this->join) ? $this->join . $join : $join;
-
-        $this->setQuery();
-
-        return $this;
-    }
-
-
-    // ADVANCED JOIN
-    public function advancedJoin(string $entity, string $onClausule, ?string $terms = null, ?string $params = null, ?string $columns = null): Model
-    {
-        $this->objJoin = new \stdClass();
-        $this->objJoin->entity = $entity;
-        $this->objJoin->type = "INNER";
-        $this->objJoin->advancedOnClausule = $onClausule;
-        $this->objJoin->terms = $terms;
-        $this->objJoin->params = $params;
-        $this->objJoin->columns = $columns;
-
-        return $this->setAdvancedJoin();
-    }
-
-    public function advancedLeftJoin(string $entity, string $onClausule, ?string $terms = null, ?string $params = null, ?string $columns = null): Model
-    {
-        $this->objJoin = new \stdClass();
-        $this->objJoin->entity = $entity;
-        $this->objJoin->type = "LEFT";
-        $this->objJoin->advancedOnClausule = $onClausule;
-        $this->objJoin->terms = $terms;
-        $this->objJoin->params = $params;
-        $this->objJoin->columns = $columns;
-
-        return $this->setAdvancedJoin();
-    }
-
-    public function advancedRightJoin(string $entity, string $onClausule, ?string $terms = null, ?string $params = null, ?string $columns = null): Model
-    {
-        $this->objJoin = new \stdClass();
-        $this->objJoin->entity = $entity;
-        $this->objJoin->type = "RIGHT";
-        $this->objJoin->advancedOnClausule = $onClausule;
-        $this->objJoin->terms = $terms;
-        $this->objJoin->params = $params;
-        $this->objJoin->columns = $columns;
-
-        return $this->setAdvancedJoin();
-    }
-
-    public function setAdvancedJoin(): Model
-    {
-
-        if (!empty($this->objJoin->terms)) {
-            $this->setTerms($this->objJoin->terms, $this->objJoin->params, $this->objJoin->entity);
-        }
-        if (!empty($this->objJoin->columns)) {
-            $this->setColumns($this->objJoin->columns, $this->objJoin->entity);
-        }
-
-        $join = "{$this->objJoin->type} JOIN {$this->objJoin->entity} 
-            ON ({$this->objJoin->advancedOnClausule})
-        ";
-        $this->join = !empty($this->join) ? $this->join . $join : $join;
-
-        $this->setQuery();
-
-        return $this;
-    }
-
-
-    /**
      * @param string $column
      * @return Model|null
      */
@@ -542,13 +354,8 @@ abstract class Model
     protected function create(array $data): ?int
     {
         try {
-
             $columns = implode(", ", array_keys($data));
             $values = ":" . implode(", :", array_keys($data));
-
-            // var_dump("INSERT INTO {$this->entity} ({$columns}) VALUES ({$values})");
-            // var_dump($this->filter($data));
-            // exit;
             $stmt = Connect::getInstance()->prepare("INSERT INTO {$this->entity} ({$columns}) VALUES ({$values})");
             $stmt->execute($this->filter($data));
             return connect::getInstance()->lastInsertId();
@@ -573,11 +380,6 @@ abstract class Model
             }
             $dataSet = implode(", ", $dataSet);
             parse_str($params, $params);
-
-            // var_dump("UPDATE {$this->entity} SET {$dataSet} WHERE {$terms}");
-            // var_dump($this->filter(array_merge($data, $params)));
-            // exit;
-
             $stmt = Connect::getInstance()->prepare("UPDATE {$this->entity} SET {$dataSet} WHERE {$terms}");
             $stmt->execute($this->filter(array_merge($data, $params)));
             return ($stmt->rowCount() ?? 1);
@@ -588,6 +390,8 @@ abstract class Model
     }
 
     /**
+     * Salvar ou atualizar
+     * 
      * @return bool
      */
     public function save(): bool

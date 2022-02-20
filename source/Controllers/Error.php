@@ -16,13 +16,15 @@ class Error extends Controller
     }
 
 
-    /** Página de Erros
-     * @param array $data
+    /**
+     * Página de erros
+     *
+     * @param null|array $data
      * @return void
      */
-    public function error($data = null)
+    public function error(?array $data = null): void
     {
-    
+
         if (!empty($data['errorcode'])) {
             switch ($data['errorcode']) {
                 case '404':
@@ -45,31 +47,4 @@ class Error extends Controller
             "noFilter" => true
         ));
     }
-
-    /** Restrito
-     * @param array $data
-     * @return void
-     */
-    public function restricted($data = null)
-    {
-        echo $this->view->render("error", array(
-            "title" => "Ooops!",
-            "message" => "Voçe não tem permissão para acessar essa página",
-            "noFilter" => true
-        ));
-    }
-
-     /** Restrito
-     * @param null|object $data
-     * @return void
-     */
-    public static function restrict($data = null)
-    {
-        echo $data->view->render("error", array(
-            "title" => "Ooops!",
-            "message" => "Voçe não tem permissão para acessar essa página",
-            "noFilter" => true
-        ));
-        exit;
-    } 
 }
