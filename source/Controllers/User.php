@@ -4,6 +4,7 @@ namespace Source\Controllers;
 
 use Source\Core\Controller;
 use Source\Models\User as ModelsUser;
+use Source\Validation\User as ValidationUser;
 
 class User extends Controller
 {
@@ -35,70 +36,12 @@ class User extends Controller
      */
     public function createOrUpdate(?array $data = null)
     {
-        $id = (!empty($data['id']) && is_numeric($data['id']) ? $data['id'] : null);
-
         // Ajax
         if (!empty($data['csrf_token'])) {
-            if (!csrf_check($data)) {
-                $json["message"] = $this->message->warning('Sessão expirou, por favor atualize a página.')->render();
-                echo json_encode($json);
-                return;
-            }
-
-            $name = (!empty($data['name']) ? clear_string($data['name']) : null);
-            if (empty($name)) {
-                $json['error'] = '[name=name]';
-                $json["message"] = $this->message->error('Por favor informe um nome valido')->render();
-                echo json_encode($json);
-                return;
-            }
-
-            if (strlen($name) < 3 ) {
-                $json['error'] = '[name=name]';
-                $json["message"] = $this->message->error('Nome não pode ser menor que 3 caracteres')->render();
-                echo json_encode($json);
-                return;
-            }
-
-
-            if (strlen($name) > 50 ) {
-                $json['error'] = '[name=name]';
-                $json["message"] = $this->message->error('Nome não pode ser maior que 50 caracteres')->render();
-                echo json_encode($json);
-                return;
-            }
-
-
-            if (empty($data['email']) || !is_email($data['email'])) {
-                $json['error'] = '[name=email]';
-                $json["message"] = $this->message->error('Por favor informe um e-mail valido')->render();
-                echo json_encode($json);
-                return;
-            }
-
-            if (strlen($data['email']) > 50 ) {
-                $json['error'] = '[name=email]';
-                $json["message"] = $this->message->error('Email não pode ser maior que 50 caracteres')->render();
-                echo json_encode($json);
-                return;
-            }
-
-            $user = (new ModelsUser)->find('email=:email AND id<>:id', "email={$data['email']}&id={$id}")->fetch();
-            if ($user) {
-                $json['error'] = '[name=email]';
-                $json["message"] = $this->message->info('Já existe um usuario cadastrado com esse email')->render();
-                echo json_encode($json);
-                return;
-            }
-
-            $user = (new ModelsUser)->findById($id);
-            if (!$user) {
-                $user = new ModelsUser;
-            }
-            $user->name = $name;
-            $user->email = $data['email'];
-            if (!$user->save()) {
-                $json["message"] = $user->message()->render();
+            $user_validate = new ValidationUser;
+            if (!$user_validate->save($data)) {
+                $json['message'] = $user_validate->message()->render();
+                (!empty($user_validate->fieldError()) ? $json['error'] = '[name=' . $user_validate->fieldError() . ']' : null);
                 echo json_encode($json);
                 return;
             }
@@ -110,6 +53,7 @@ class User extends Controller
         }
 
         // View
+        $id = (!empty($data['id']) && is_numeric($data['id']) ? $data['id'] : null);
         $user = (new ModelsUser)->findById($id);
         echo $this->view->render("views/user/create-or-update", array(
             "title" => ($user ? 'Editar usuario' : 'Novo usuario'),
@@ -117,6 +61,7 @@ class User extends Controller
             "user" => $user,
         ));
     }
+
 
     /**
      * Apagar usuario
@@ -126,16 +71,9 @@ class User extends Controller
      */
     public function destroy(array $data = null): void
     {
-        $id = (!empty($data['id']) && is_numeric($data['id']) ? $data['id'] : null);
-        $user = (new ModelsUser)->findById($id);
-        if (!$user) {
-            $json["message"] = $this->message->error('Usuario não encontrado')->render();
-            echo json_encode($json);
-            return;
-        }
-
-        if (!$user->destroy()) {
-            $json["message"] = $user->message()->render();
+        $user_validate = new ValidationUser;
+        if (!$user_validate->destroy($data)) {
+            $json['message'] = $user_validate->message()->render();
             echo json_encode($json);
             return;
         }
