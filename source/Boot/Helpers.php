@@ -176,3 +176,36 @@ function is_cpf($cpf)
     }
     return true;
 }
+
+/**
+ * 
+ * @param string $string
+ * @return string
+ */
+function only_numbers($string)
+{
+    return preg_replace("/[^0-9]/", "", $string);
+}
+
+
+/**
+ * Função para limpar string - remove qualquer caracteres especial
+ * 
+ * @param string $string
+ * @return string
+ */
+function clear_string($string)
+{
+    return remove_excess_space(preg_replace("/[^A-Za-zà-úÀ-Ú\s]/", "", $string));
+}
+
+/**
+ * Remover exesso de espaço em branco
+ *
+ * @param string|null $string
+ * @return void
+ */
+function remove_excess_space(?string $string = null)
+{
+    return trim(preg_replace('/\s\s+/', ' ', $string));
+}

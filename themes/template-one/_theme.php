@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
-    <title><?= (isset($title) ? $title . " :: " : "") ?>OM Telemarketing</title>
+    <title><?= (isset($title) ? $title . " :: " : "") ?> CRUD - PHP - MVC - POO </title>
     <link type="text/css" href="<?= theme("/assets/style.css", CONF_VIEW_THEME) ?>" rel="stylesheet">
     <?= $v->section("styles"); ?>
 
@@ -55,7 +55,7 @@
 
     <footer class="footer mt-auto py-3 bg-light">
         <div class="container text-center">
-            <span style="font-size: 1em;">Copyright <?= date("Y") ?> - All rights reserved </span>
+            <span style="font-size: 1em;">Copyright <?= date("Y") ?> - All rights reserved - <small><i><u>Lucas Almeida Negromonte</u></i></small></span>
         </div>
     </footer>
 
