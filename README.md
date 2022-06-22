@@ -14,7 +14,7 @@ Após criar a pasta com os arquivos necessários para rodar seu sistema, você p
 Execute o arquivo `database.sql` na raiz do projeto para criar o banco de dados.
 
 ### *Resultado no link abaixo* ###
-https://crud-01.000webhostapp.com/users
+https://crud-01.000webhostapp.com/crud-01/users
 
 #### Estrutura banco de dados  ####
 

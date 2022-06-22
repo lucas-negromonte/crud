@@ -3,7 +3,7 @@
 /**
  * Main Setup
  */
-define("CONF_URL_BASE", "https://crud-01.000webhostapp.com");
+define("CONF_URL_BASE", "https://crud-01.000webhostapp.com/crud-01");
 define("CONF_URL_TEST", "https://localhost/crud");
 define("CONF_SITE_NAME", "Sistema CRUD em PHP Orientado a Objetos e MVC.");
 define("CONF_MAIL", "lcs.mj.zl@gmail.com");
