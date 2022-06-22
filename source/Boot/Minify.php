@@ -9,7 +9,11 @@ if (!empty($_SERVER['HTTP_HOST']) && stristr($_SERVER['HTTP_HOST'], 'localhost')
      * CSS Assets
      */
     $minCSS = new CSS();
+    $minCSS->add(__DIR__ . "/../../shared/styles/bootstrap-icons-1.8.3/bootstrap-icons.css");
     $minCSS->add(__DIR__ . "/../../shared/styles/bootstrap-5/bootstrap.min.css");
+
+
+    
 
   
     $cssDir = scandir(CONF_VIEW_PATH . "/" . CONF_VIEW_THEME . "/assets/css");
