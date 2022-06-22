@@ -2,15 +2,13 @@
 Exemplo de PHP crud em MVC orientado a objetos
 
 ### 1º passo  ###
-Estamos ultilizando composer, lembre de rodar o comando 
+Lembre-se de executar o comando para instalar as dependências
 ```sh
-composer update
+composer install
 ```
- para atualizar as dependencias e criar a pasta vendor.
 
 ### 2º passo  ###
-Apos criado a pasta vendo com os arquivos necessarios para rodar seu sistema, voçe precisa atualizar seu Config, esta localizado em `source/Boot/Config.php` preencha todas as informações de acordo com seu ambiente.
- rendering.
+Após criar a pasta com os arquivos necessários para rodar seu sistema, você precisa atualizar seu config, ele está localizado em `source/Boot/Config.php` preencha todas as informações de acordo com seu ambiente.
 
 ### 3º passo  ###
 Execute o arquivo `database.sql` na raiz do projeto para criar o banco de dados.
